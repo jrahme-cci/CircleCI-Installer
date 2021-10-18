@@ -52,22 +52,41 @@ install_dependencies(){
   echo "installing installing installing woooo"
 }
 
+get_field(){
+  # $1 expected as resp body
+  # $2 expected as field
+  echo "$(echo $1 | sed 's/,/\n/g' | sed 's/[{|}]//g' | grep $2 | awk -F "\":" '{ print $2 }')"
+}
+
 download_launch_agent(){
-  local attempt=0
+  local attempt={$2:-"0"}
   local runnerHost=${LAUNCH_AGENT_API_URL:-"https://runner.circleci.com"}
   local version={$1:-""}
+  local arch="$(get_arch)"
 
-  dlResp=$(curl -X GET -s "$runnerHost/api/v2/launch-agent/download?version=$version&arch=arm64&os=darwin" -H "Authorization: Bearer $LAUNCH_AGENT_API_AUTH_TOKEN")
+  body="{\"arch\":\"$arch\", \"os\":\"darwin\"}"
+
+  dlResp=$(curl -f -X GET -s "$runnerHost/api/v2/launch-agent/download?version=$version&arch=arm64&os=darwin" \
+    -d "$body" -H "content-type: application/json" -H "Authorization: Bearer $LAUNCH_AGENT_API_AUTH_TOKEN")
+    
+# error handling logic to implement for bad requests,
+# exit code 22 is a bad or missing token and should not be retried
+#  if [ "$?" -ne "0" ] then;
+#    if [ $attempt -lt 3 ]; then
+#      echo "nope"
+#    fi
+#  fi
 
   # should instead be grepping / awking it out? It'd be nice not to require peeps to have the jq  requirement
-  checksum=$(echo $dlResponse | jq .checksum)
-  dlURL=$(echo $dlResponse | jq .url)
+  checksum="$(get_field \"$dlResp\" \"checksum\")"
+  dlURL="$(get_field \"$dlResp\" \"url\")"
+  version="$(get_field \"$dlResp\" \"version\")"
 
-  echo "--------------"
-  echo $dlResp
-  echo $checksum
-  echo $dlURL
-  echo "--------------"
+  # make directory for launch-agent-download
+  targetDir="darwin/$arch/$version"
+  mkdir -p "$targetDir"
+  echo "$dlURL"
+  curl --compressed -L "$dlURL" -o "$targetDir/circleci-launch-agent"
 
 }
 
