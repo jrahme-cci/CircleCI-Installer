@@ -78,7 +78,6 @@ download_launch_agent(){
 #    fi
 #  fi
 
-  # should instead be grepping / awking it out? It'd be nice not to require peeps to have the jq  requirement
   checksum=$(get_field \"$dlResp\" \"checksum\")
   dlURL=$(get_field \"$dlResp\" \"url\")
   version=$(get_field \"$dlResp\" \"version\")
@@ -89,6 +88,10 @@ download_launch_agent(){
 
   # download the launch agent binary
   curl --compressed -L "$dlURL" -o "$targetDir/circleci-launch-agent"
+
+  # validate the checksum
+  set -o xtrace
+  shasum -a 256 "$targetDir/circleci-launch-agent" | awk '$1=='"$checksum"' {print $1}'
 }
 
 #### Installation Script ####
