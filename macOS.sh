@@ -60,9 +60,9 @@ get_field(){
 
 # shellcheck disable=SC2120
 download_launch_agent(){
-  local attempt={$2:-"0"}
+  local attempt=${2:-"0"}
   local runnerHost=${LAUNCH_AGENT_API_URL:-"https://runner.circleci.com"}
-  local version={$1:-""}
+  local version=${1:-""}
   local arch="$(get_arch)"
 
   body="{\"arch\":\"$arch\", \"os\":\"darwin\"}"
@@ -78,19 +78,20 @@ download_launch_agent(){
 #    fi
 #  fi
 
-  checksum=$(get_field \"$dlResp\" \"checksum\")
-  dlURL=$(get_field \"$dlResp\" \"url\")
-  version=$(get_field \"$dlResp\" \"version\")
+  checksum="$(get_field "$dlResp" "checksum")"
+  dlURL="$(get_field "$dlResp" "url")"
+  version="$(get_field "$dlResp" "version")"
 
   # make directory for launch-agent-download
   targetDir="darwin/$arch/$version"
   mkdir -p "$targetDir"
 
   # download the launch agent binary
-  curl --compressed -L "$dlURL" -o "$targetDir/circleci-launch-agent"
+  curl -s --compressed -L "$dlURL" -o "$targetDir/circleci-launch-agent"
 
   # validate the checksum
-  shasum -a 256 "$targetDir/circleci-launch-agent" | awk '$1=='"$checksum"' {print $1}'
+  local actualChecksum="$(shasum -a 256 "$targetDir/circleci-launch-agent" | awk '{print $1}')"
+  [[ "$actualChecksum" == "$checksum" ]] || download_launch_agent "" $((attempt + 1))
 }
 
 #### Installation Script ####
