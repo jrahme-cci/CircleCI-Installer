@@ -122,9 +122,8 @@ if [ -z "$LAUNCH_AGENT_API_AUTH_TOKEN" ]; then
   exit 1
 fi
 
-base_url="https://circleci-binary-releases.s3.amazonaws.com/circleci-launch-agent"
+# Default binary installation location
 prefix=/opt/circleci
-platform="darwin/$(get_arch)"
 
 while getopts 'p:v:' flag; do
   case "${flag}" in
@@ -139,7 +138,12 @@ mkdir -p "$prefix/workdir"
 
 # Downloading launch agent
 echo "Downloading and verifying CircleCI Launch Agent Binary"
+binaryPath="$(download_launch_agent)"
 
-download_launch_agent
+# Move the launch agent to the correct directory
+cp "$binaryPath" "$prefix/$binaryName"
+chmod +x "$prefix/$binaryName"  # Should this set executable for all users for just owner?
 
+# Should we clean up the temp download dir here?
 
+echo "CircleCI Launch Agent Binary succesfully installed"
