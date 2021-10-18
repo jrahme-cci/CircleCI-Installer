@@ -65,9 +65,13 @@ download_launch_agent(){
   local version=${1:-""}
   local arch="$(get_arch)"
 
-  body="{\"arch\":\"$arch\", \"os\":\"darwin\"}"
+  if [ -z "$version" ]; then
+    body="{\"arch\":\"$arch\", \"os\":\"darwin\"}"
+  else
+    body="{\"arch\":\"$arch\", \"os\":\"darwin\", \"version\":\"$version\"}"
+  fi
 
-  dlResp=$(curl -f -X GET -s "$runnerHost/api/v2/launch-agent/download?version=$version&arch=arm64&os=darwin" \
+  dlResp=$(curl -f -X GET -s "$runnerHost/api/v2/launch-agent/download" \
     -d "$body" -H "content-type: application/json" -H "Authorization: Bearer $LAUNCH_AGENT_API_AUTH_TOKEN")
     
 # error handling logic to implement for bad requests,
