@@ -65,6 +65,11 @@ download_launch_agent(){
   local version=${1:-""}
   local arch="$(get_arch)"
 
+  if [ "$attempt" -ge 3 ]; then
+    echo "Unable to download launch agent after $attempt attempts. Please try again later"
+    exit 1
+  fi
+
   if [ -z "$version" ]; then
     body="{\"arch\":\"$arch\", \"os\":\"darwin\"}"
   else
@@ -74,13 +79,15 @@ download_launch_agent(){
   dlResp=$(curl -f -X GET -s "$runnerHost/api/v2/launch-agent/download" \
     -d "$body" -H "content-type: application/json" -H "Authorization: Bearer $LAUNCH_AGENT_API_AUTH_TOKEN")
     
-# error handling logic to implement for bad requests,
-# exit code 22 is a bad or missing token and should not be retried
-#  if [ "$?" -ne "0" ] then;
-#    if [ $attempt -lt 3 ]; then
-#      echo "nope"
-#    fi
-#  fi
+  # exit code 22 is a bad or missing token and should not be retried
+  exitCode="$?"
+  if [ "$exitCode" -ne 0 ]; then
+    if [ "$exitCode" -eq 22 ]; then
+      echo "Invalid or missing token. Please set LAUNCH_AGENT_API_AUTH_TOKEN to a valid runner token"
+      exit 1
+    fi
+    download_launch_agent "" $((attempt + 1))
+  fi
 
   checksum="$(get_field "$dlResp" "checksum")"
   dlURL="$(get_field "$dlResp" "url")"
