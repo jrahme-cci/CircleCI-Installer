@@ -55,7 +55,7 @@ install_dependencies(){
 get_field(){
   # $1 expected as resp body
   # $2 expected as field
-  echo "$(echo $1 | sed 's/,/\n/g' | sed 's/[{|}]//g' | grep $2 | awk -F "\":" '{ print $2 }')"
+  echo "$1" | sed 's/,/\n/g' | sed 's/[{|}]//g' | grep "$2" | awk -F "\":" '{ print $2 }'
 }
 
 download_launch_agent(){
@@ -81,6 +81,8 @@ download_launch_agent(){
   checksum="$(get_field \"$dlResp\" \"checksum\")"
   dlURL="$(get_field \"$dlResp\" \"url\")"
   version="$(get_field \"$dlResp\" \"version\")"
+
+  echo "$dlURL" 
 
   # make directory for launch-agent-download
   targetDir="darwin/$arch/$version"
