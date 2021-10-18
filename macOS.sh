@@ -90,7 +90,6 @@ download_launch_agent(){
   curl --compressed -L "$dlURL" -o "$targetDir/circleci-launch-agent"
 
   # validate the checksum
-  set -o xtrace
   shasum -a 256 "$targetDir/circleci-launch-agent" | awk '$1=='"$checksum"' {print $1}'
 }
 
