@@ -55,9 +55,10 @@ install_dependencies(){
 get_field(){
   # $1 expected as resp body
   # $2 expected as field
-  echo "$1" | sed 's/,/\n/g' | sed 's/[{|}]//g' | grep "$2" | awk -F "\":" '{ print $2 }'
+  echo "$1" | sed 's/,/\n/g' | sed 's/[{|}]//g' | grep "$2" | awk -F "\":" '{ print $2 }' | tr -d '"'
 }
 
+# shellcheck disable=SC2120
 download_launch_agent(){
   local attempt={$2:-"0"}
   local runnerHost=${LAUNCH_AGENT_API_URL:-"https://runner.circleci.com"}
@@ -78,18 +79,16 @@ download_launch_agent(){
 #  fi
 
   # should instead be grepping / awking it out? It'd be nice not to require peeps to have the jq  requirement
-  checksum="$(get_field \"$dlResp\" \"checksum\")"
-  dlURL="$(get_field \"$dlResp\" \"url\")"
-  version="$(get_field \"$dlResp\" \"version\")"
-
-  echo "$dlURL" 
+  checksum=$(get_field \"$dlResp\" \"checksum\")
+  dlURL=$(get_field \"$dlResp\" \"url\")
+  version=$(get_field \"$dlResp\" \"version\")
 
   # make directory for launch-agent-download
   targetDir="darwin/$arch/$version"
   mkdir -p "$targetDir"
-  echo "$dlURL"
-  curl --compressed -L "$dlURL" -o "$targetDir/circleci-launch-agent"
 
+  # download the launch agent binary
+  curl --compressed -L "$dlURL" -o "$targetDir/circleci-launch-agent"
 }
 
 #### Installation Script ####
