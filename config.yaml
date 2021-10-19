@@ -1,9 +1,9 @@
 api:
-  auth_token: AUTH_TOKEN
+  auth_token: {{AUTH_TOKEN}}
 
 runner:
-  name: RUNNER_NAME
-  command_prefix : ["sudo", "-niHu", "USERNAME", "--"]
+  name: {{RUNNER_NAME}}
+  command_prefix : ["sudo", "-niHu", "{{USERNAME}}", "--"]
   working_directory: /tmp/%s
   cleanup_working_directory: true
 

@@ -80,9 +80,9 @@ configure_launch_agent(){
   mkdir -p "$launchConfigDir"
 
   # Substitute required values in config file & output to config directory
-  sed -e 's/AUTH_TOKEN/'"$LAUNCH_AGENT_API_AUTH_TOKEN"'/g' \
-    -e 's/RUNNER_NAME/'"$LAUNCH_AGENT_NAME"'/g' \
-    -e 's/USERNAME/'"$LAUNCH_AGENT_USERNAME"'/g' \
+  sed -e 's/{{AUTH_TOKEN}}/'"$LAUNCH_AGENT_API_AUTH_TOKEN"'/g' \
+    -e 's/{{RUNNER_NAME}}/'"$(hostname)"'/g' \
+    -e 's/{{USERNAME}}/'"$LAUNCH_AGENT_USERNAME"'/g' \
     config.yaml > "$configDir"/"$configFileName"
 
   # Substitute app name & directory in plist file & output to launch directory
@@ -110,12 +110,6 @@ fi
 
 if [ -z "$LAUNCH_AGENT_USERNAME" ]; then
   echo "Launch agent username not found in the \$LAUNCH_AGENT_USERNAME environment variable, please set and start intallation again"
-  echo "See https://circleci.com/docs/2.0/runner-installation/ for details"
-  exit 1
-fi
-
-if [ -z "$LAUNCH_AGENT_NAME" ]; then
-  echo "Launch agent name not found in the \$LAUNCH_AGENT_NAME environment variable, please set and start intallation again"
   echo "See https://circleci.com/docs/2.0/runner-installation/ for details"
   exit 1
 fi
