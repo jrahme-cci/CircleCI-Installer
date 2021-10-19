@@ -77,13 +77,21 @@ get_arch(){
   esac
 }
 
-installDeps=("curl" "shasum")
-runtimeDeps=("tar" "git" "gzip")
+install_dependencies(){
+  local deps="shasum git tar gzip invalid"
 
-validate_dependencies(){
-  if ! command -v grep &> /dev/null; then
-    echo yeah
+  if ! command -v brew &> /dev/null; then
+    echo "Homebrew was not found, installing now"
+    "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   fi
+
+  for dep in $deps
+  do
+    if ! command -v "$dep" &> /dev/null; then
+      echo "$dep was not found, installing now"
+      brew install "$dep"
+    fi
+  done
 }
 
 get_field(){
@@ -181,7 +189,7 @@ if [ -z "$LAUNCH_AGENT_API_AUTH_TOKEN" ]; then
   exit 1
 fi
 
-validate_dependencies
+install_dependencies
 
 # Set up runner directory
 mkdir -p "$prefix/workdir"
