@@ -78,18 +78,18 @@ get_arch(){
 }
 
 install_dependencies(){
-  local deps="shasum git tar gzip invalid"
-
-  if ! command -v brew &> /dev/null; then
-    echo "Homebrew was not found, installing now"
-    "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  fi
+  local deps="shasum git tar gzip"
 
   for dep in $deps
   do
+    if ! command -v brew &> /dev/null; then
+    echo "Homebrew was not found, installing now"
+    "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    fi
+
     if ! command -v "$dep" &> /dev/null; then
       echo "$dep was not found, installing now"
-      brew install "$dep"
+      sudo -u \#"$userId" brew install "$dep"
     fi
   done
 }
@@ -167,13 +167,14 @@ configure_launch_agent(){
 
 #### Installation Script ####
 # super user permissions are required to create new users, and directories in /opt
-while getopts 'p:v:dc' flag; do
+while getopts 'p:v:dcu:' flag; do
   case "${flag}" in
     # Set prefix dir
     p) prefix="${OPTARG}" ;;
     v) version="${OPTARG}" ;;
     d) noDaemon="set" ;;
     c) noConfig="set" ;;
+    u) defaultUser="${OPTARG}" ;;
     *) exit 1;;
   esac
 done
@@ -189,6 +190,13 @@ if [ -z "$LAUNCH_AGENT_API_AUTH_TOKEN" ]; then
   exit 1
 fi
 
+if ! id -u "$defaultUser" -eq 0; then
+  echo "The user $defaultUser was not found, please create the $defaultUser user and start installation again"
+  echo "See https://circleci.com/docs/2.0/runner-installation/ for details" 
+  exit 1
+fi
+
+userId="$(id -u "$defaultUser")"
 install_dependencies
 
 # Set up runner directory
