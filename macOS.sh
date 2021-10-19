@@ -118,7 +118,7 @@ if [ -z "$LAUNCH_AGENT_NAME" ]; then
   exit 1
 fi
 
-# Default binary installation location
+# Default binary & config installation location
 prefix=/opt/circleci
 configDir=/Library/Preferences/com.circleci.runner
 launchConfigDir=/Library/LaunchDaemons
@@ -143,10 +143,16 @@ binaryPath="$(download_launch_agent)"
 cp "$binaryPath" "$prefix/$binaryName"
 chmod +x "$prefix/$binaryName"  # Should this set executable for all users or just owner?
 
+echo "Installing the CircleCI Launch Agent"
+
 # Create the configuration
 configure_launch_agent
 
+# The agent may already be loaded, if it's not ignore the error
+launchctl unload "$launchConfigDir/com.circleci.runner.plist" 2> /dev/null
+launchctl load "$launchConfigDir/com.circleci.runner.plist"
+
 # Should we clean up the temp download dir here?
 
-
 echo "CircleCI Launch Agent Binary succesfully installed"
+echo "To validate the CircleCI Launch Agent has been insatlled correctly, you can check in log reports for the logs called com.circleci.runner.log"
