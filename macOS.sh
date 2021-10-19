@@ -22,6 +22,51 @@ defaultConfig="api:
   logging:
     file: /Library/Logs/com.circleci.runner.log"
 
+defaultLaunchConfig="<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<!DOCTYPE plist PUBLIC \"-//Apple Computer//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">
+<plist version=\"1.0\">
+    <dict>
+        <key>Label</key>
+        <string>com.circleci.runner</string>
+
+        <key>Program</key>
+        <string>$prefix/$binaryName</string>
+
+        <key>ProgramArguments</key>
+        <array>
+            <string>$binaryName</string>
+            <string>--config</string>
+            <string>/Library/Preferences/com.circleci.runner/$configFileName</string>
+        </array>
+
+        <key>RunAtLoad</key>
+        <true/>
+
+        <!-- The agent needs to run at all times -->
+        <key>KeepAlive</key>
+        <true/>
+
+        <!-- This prevents macOS from limiting the resource usage of the agent -->
+        <key>ProcessType</key>
+        <string>Interactive</string>
+
+        <!-- Increase the frequency of restarting the agent on failure, or post-update -->
+        <key>ThrottleInterval</key>
+        <integer>3</integer>
+
+        <!-- Wait for 10 minutes for the agent to shut down (the agent itself waits for tasks to complete) -->
+        <key>ExitTimeOut</key>
+        <integer>600</integer>
+
+        <!-- The agent uses its own logging and rotation to file -->
+        <key>StandardOutPath</key>
+        <string>/dev/null</string>
+        <key>StandardErrorPath</key>
+        <string>/dev/null</string>
+    </dict>
+</plist>
+"
+
 #### Installation Functions ####
 
 get_arch(){
@@ -104,13 +149,7 @@ configure_launch_agent(){
 
   echo "$defaultConfig" > "$configDir"/"$configFileName"
 
-  # Substitute app name & directory in plist file & output to launch directory
-  # sed is using an alternate delimiter to template the prefix as it contains / characters
-  sed -e 's/LAUNCH_AGENT_BINARY_NAME/'"$binaryName"'/g' \
-    -e 's|LAUNCH_AGENT_PREFIX|'"$prefix"'|g' \
-    -e 's|CONFIG_FILE_NAME|'"$configFileName"'|g' \
-    runner.plist > "$launchConfigDir"/com.circleci.runner.plist
-
+  echo "$defaultLaunchConfig" > "$launchConfigDir"/com.circleci.runner.plist
   chmod 644 "$launchConfigDir"/com.circleci.runner.plist
 }
 
