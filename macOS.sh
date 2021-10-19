@@ -91,6 +91,8 @@ configure_launch_agent(){
     -e 's|LAUNCH_AGENT_PREFIX|'"$prefix"'|g' \
     -e 's|CONFIG_FILE_NAME|'"$configFileName"'|g' \
     runner.plist > "$launchConfigDir"/com.circleci.runner.plist
+
+  chmod 664 "$launchConfigDir"/com.circleci.runner.plist
 }
 
 #### Installation Script ####
