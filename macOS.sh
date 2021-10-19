@@ -92,7 +92,7 @@ configure_launch_agent(){
     -e 's|CONFIG_FILE_NAME|'"$configFileName"'|g' \
     runner.plist > "$launchConfigDir"/com.circleci.runner.plist
 
-  chmod 664 "$launchConfigDir"/com.circleci.runner.plist
+  chmod 644 "$launchConfigDir"/com.circleci.runner.plist
 }
 
 #### Installation Script ####
@@ -154,7 +154,8 @@ configure_launch_agent
 launchctl unload "$launchConfigDir/com.circleci.runner.plist" 2> /dev/null
 launchctl load "$launchConfigDir/com.circleci.runner.plist"
 
-# Should we clean up the temp download dir here?
+# Is this a good idea? Could cause an issue if the temp install dir already exists and has stuff in it
+echo "$binaryPath" | rm -rf "$(awk -F '/' '{print $1}')"
 
 echo "CircleCI Launch Agent Binary succesfully installed"
-echo "To validate the CircleCI Launch Agent has been insatlled correctly, you can check in log reports for the logs called com.circleci.runner.log"
+echo "To validate the CircleCI Launch Agent is running correctly, you can check in log reports for the logs called com.circleci.runner.log"
