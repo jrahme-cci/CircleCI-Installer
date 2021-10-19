@@ -2,6 +2,7 @@
 
 version=""
 binaryName="circleci-launch-agent"
+runnerName=""
 
 #### Installation Functions ####
 
@@ -12,42 +13,6 @@ get_arch(){
     *) echo "$arch is unsupported for CircleCI Runner on macOS"; exit 1 ;; 
   esac
 }
-
-#download_launch_agent(){
-#  local attempt=0
-#  local checksums=""
-#
-#  # there is an actual flag for this that I can't remember at the moment, look it up and put in incase of PR
-#  if [ ! -z "$1" ]; then  
-#    attempt=$1 
-#  fi
-#
-#  echo "Attempting to download and verify CircleCI Launch Agent: attempt $attempt"
-#
-#  if [ $attempt -gt 2 ]; then
-#    echo "Unable to download and validate CircleCI Launch Agent after 3 attempts, please try again later"; exit 1
-#  fi
-#
-#
-#  base_url="https://circleci-binary-releases.s3.amazonaws.com/circleci-launch-agent"
-#
-#  if [ -z "$v" ]; then
-#    version=$(curl -s "${base_url}/release.txt")
-#    if [ -z "$version" ]; then
-#      echo "Unable to determine CircleCI Runner version to install"
-#    fi
-#  fi
-#
-#  checksums=$(curl -sSL "$base_url/$version/checksums.txt")
-#  file="$(echo "$checksums" | grep -F "$platform" | cut -d ' ' -f 2 | sed 's/^.//')"
-#  mkdir -p $(echo $file | sed 's/circleci-launch-agent//')
-#
-#  echo "Downloading CircleCI Launch Agent $version to $file"
-#  curl --compressed -sL "$base_url/$version/$file" -o "$file" || download_launch_agent $((attempt + 1))
-#  
-#  # Verifying download
-#  grep "$file" checksums.txt | sha256sum --check && chmod +x "$file"; sudo cp "$file" "$prefix/circleci-launch-agent" || download_launch_agent $((attempt + 1))
-#}
 
 install_dependencies(){
   echo "installing installing installing woooo"
@@ -109,6 +74,15 @@ download_launch_agent(){
   fi
 }
 
+configure_launch_agent(){
+  # Substitute required values in config file
+  set -o xtrace
+  sed -e 's/AUTH_TOKEN/'"$LAUNCH_AGENT_API_AUTH_TOKEN"'/g' \
+    -e 's/RUNNER_NAME/'"$runnerName"'/g' \
+    -e 's/USERNAME/stuart/g' \
+    config.yaml > out.yaml
+}
+
 #### Installation Script ####
 # super user permissions are required to create new users, and directories in /opt
 if [ ! $UID -eq 0 ]; then  
@@ -125,11 +99,12 @@ fi
 # Default binary installation location
 prefix=/opt/circleci
 
-while getopts 'p:v:' flag; do
+while getopts 'p:v:n:' flag; do
   case "${flag}" in
     # Set prefix dir
     p) prefix="${OPTARG}" ;;
     v) version="${OPTARG}" ;;
+    n) runnerName="${OPTARG}" ;;
   esac
 done
 
@@ -142,8 +117,13 @@ binaryPath="$(download_launch_agent)"
 
 # Move the launch agent to the correct directory
 cp "$binaryPath" "$prefix/$binaryName"
-chmod +x "$prefix/$binaryName"  # Should this set executable for all users for just owner?
+chmod +x "$prefix/$binaryName"  # Should this set executable for all users or just owner?
+
+# Create the configuration
+configure_launch_agent
 
 # Should we clean up the temp download dir here?
+
+
 
 echo "CircleCI Launch Agent Binary succesfully installed"
