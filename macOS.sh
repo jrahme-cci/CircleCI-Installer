@@ -147,11 +147,11 @@ configure_launch_agent(){
   mkdir -p "$configDir"
   mkdir -p "$launchConfigDir"
 
-  if [ "$noConfig" == "set" ]; then
+  if [ "$noConfig" != "set" ]; then
     echo "$defaultConfig" > "$configDir"/"$configFileName"
   fi
 
-  if [ "$noDaemon" == "set" ]; then
+  if [ "$noDaemon" != "set" ]; then
     echo "$defaultLaunchConfig" > "$launchConfigDir"/com.circleci.runner.plist
     chmod 644 "$launchConfigDir"/com.circleci.runner.plist
   fi
@@ -159,7 +159,7 @@ configure_launch_agent(){
 
 #### Installation Script ####
 # super user permissions are required to create new users, and directories in /opt
-while getopts 'p:v:d:c:' flag; do
+while getopts 'p:v:dc' flag; do
   case "${flag}" in
     # Set prefix dir
     p) prefix="${OPTARG}" ;;
