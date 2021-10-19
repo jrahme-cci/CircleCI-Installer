@@ -2,6 +2,7 @@
 
 version=""
 binaryName="circleci-launch-agent"
+configFileName="launch-agent-config.yaml"
 
 #### Installation Functions ####
 
@@ -74,19 +75,26 @@ download_launch_agent(){
 }
 
 configure_launch_agent(){
-  # Create the configuration directory
+  # Create the configuration directories
   mkdir -p "$configDir"
+  mkdir -p "$launchConfigDir"
 
   # Substitute required values in config file & output to config directory
   sed -e 's/AUTH_TOKEN/'"$LAUNCH_AGENT_API_AUTH_TOKEN"'/g' \
     -e 's/RUNNER_NAME/'"$LAUNCH_AGENT_NAME"'/g' \
     -e 's/USERNAME/'"$LAUNCH_AGENT_USERNAME"'/g' \
-    config.yaml > "$configDir"/launch-agent-config.yaml
+    config.yaml > "$configDir"/"$configFileName"
+
+  # Substitute app name & directory in plist file & output to launch directory
+  # sed is using an alternate delimiter to template the prefix as it contains / characters
+  sed -e 's/LAUNCH_AGENT_BINARY_NAME/'"$binaryName"'/g' \
+    -e 's|LAUNCH_AGENT_PREFIX|'"$prefix"'|g' \
+    -e 's|CONFIG_FILE_NAME|'"$configFileName"'|g' \
+    runner.plist > "$launchConfigDir"/com.circleci.runner.plist
 }
 
 #### Installation Script ####
 # super user permissions are required to create new users, and directories in /opt
-set -o xtrace
 if [ ! $UID -eq 0 ]; then  
   echo "CircleCI Runner installation must be ran with super user permissions, please rerun with sudo"; 
   exit 1
@@ -113,6 +121,7 @@ fi
 # Default binary installation location
 prefix=/opt/circleci
 configDir=/Library/Preferences/com.circleci.runner
+launchConfigDir=/Library/LaunchDaemons
 
 while getopts 'p:v:' flag; do
   case "${flag}" in
