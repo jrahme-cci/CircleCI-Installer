@@ -2,7 +2,6 @@
 
 version=""
 binaryName="circleci-launch-agent"
-runnerName=""
 
 #### Installation Functions ####
 
@@ -75,16 +74,19 @@ download_launch_agent(){
 }
 
 configure_launch_agent(){
-  # Substitute required values in config file
-  set -o xtrace
+  # Create the configuration directory
+  mkdir -p "$configDir"
+
+  # Substitute required values in config file & output to config directory
   sed -e 's/AUTH_TOKEN/'"$LAUNCH_AGENT_API_AUTH_TOKEN"'/g' \
-    -e 's/RUNNER_NAME/'"$runnerName"'/g' \
-    -e 's/USERNAME/stuart/g' \
-    config.yaml > out.yaml
+    -e 's/RUNNER_NAME/'"$LAUNCH_AGENT_NAME"'/g' \
+    -e 's/USERNAME/'"$LAUNCH_AGENT_USERNAME"'/g' \
+    config.yaml > "$configDir"/launch-agent-config.yaml
 }
 
 #### Installation Script ####
 # super user permissions are required to create new users, and directories in /opt
+set -o xtrace
 if [ ! $UID -eq 0 ]; then  
   echo "CircleCI Runner installation must be ran with super user permissions, please rerun with sudo"; 
   exit 1
@@ -92,19 +94,32 @@ fi
 
 if [ -z "$LAUNCH_AGENT_API_AUTH_TOKEN" ]; then
   echo "Runner token not found in the \$LAUNCH_AGENT_API_AUTH_TOKEN environment variable, please set and start installation again"
-  echo "see https://circleci.com/docs/2.0/runner-installation/ for details"
+  echo "See https://circleci.com/docs/2.0/runner-installation/ for details"
+  exit 1
+fi
+
+if [ -z "$LAUNCH_AGENT_USERNAME" ]; then
+  echo "Launch agent username not found in the \$LAUNCH_AGENT_USERNAME environment variable, please set and start intallation again"
+  echo "See https://circleci.com/docs/2.0/runner-installation/ for details"
+  exit 1
+fi
+
+if [ -z "$LAUNCH_AGENT_NAME" ]; then
+  echo "Launch agent name not found in the \$LAUNCH_AGENT_NAME environment variable, please set and start intallation again"
+  echo "See https://circleci.com/docs/2.0/runner-installation/ for details"
   exit 1
 fi
 
 # Default binary installation location
 prefix=/opt/circleci
+configDir=/Library/Preferences/com.circleci.runner
 
-while getopts 'p:v:n:' flag; do
+while getopts 'p:v:' flag; do
   case "${flag}" in
     # Set prefix dir
     p) prefix="${OPTARG}" ;;
     v) version="${OPTARG}" ;;
-    n) runnerName="${OPTARG}" ;;
+    *) exit 1;;
   esac
 done
 
@@ -123,7 +138,6 @@ chmod +x "$prefix/$binaryName"  # Should this set executable for all users or ju
 configure_launch_agent
 
 # Should we clean up the temp download dir here?
-
 
 
 echo "CircleCI Launch Agent Binary succesfully installed"
