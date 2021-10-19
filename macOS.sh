@@ -1,8 +1,26 @@
 #!/usr/bin/env bash
 
 version=""
+
 binaryName="circleci-launch-agent"
 configFileName="launch-agent-config.yaml"
+defaultUser="circleci"
+
+# Default binary & config installation location
+prefix=/opt/circleci
+configDir=/Library/Preferences/com.circleci.runner
+launchConfigDir=/Library/LaunchDaemons
+
+defaultConfig="api:
+  auth_token: $LAUNCH_AGENT_API_AUTH_TOKEN
+
+  runner:
+    command_prefix: [\"sudo\", \"-niHu\", \"$defaultUser\", \"--\"]
+    working_directory: /tmp/%s
+    cleanup_working_directory: true
+
+  logging:
+    file: /Library/Logs/com.circleci.runner.log"
 
 #### Installation Functions ####
 
@@ -14,8 +32,13 @@ get_arch(){
   esac
 }
 
-install_dependencies(){
-  echo "installing installing installing woooo"
+installDeps=("curl" "shasum")
+runtimeDeps=("tar" "git" "gzip")
+
+validate_dependencies(){
+  if ! command -v grep &> /dev/null; then
+    echo yeah
+  fi
 }
 
 get_field(){
@@ -79,11 +102,7 @@ configure_launch_agent(){
   mkdir -p "$configDir"
   mkdir -p "$launchConfigDir"
 
-  # Substitute required values in config file & output to config directory
-  sed -e 's/{{AUTH_TOKEN}}/'"$LAUNCH_AGENT_API_AUTH_TOKEN"'/g' \
-    -e 's/{{RUNNER_NAME}}/'"$(hostname)"'/g' \
-    -e 's/{{USERNAME}}/'"$LAUNCH_AGENT_USERNAME"'/g' \
-    config.yaml > "$configDir"/"$configFileName"
+  echo "$defaultConfig" > "$configDir"/"$configFileName"
 
   # Substitute app name & directory in plist file & output to launch directory
   # sed is using an alternate delimiter to template the prefix as it contains / characters
@@ -97,6 +116,15 @@ configure_launch_agent(){
 
 #### Installation Script ####
 # super user permissions are required to create new users, and directories in /opt
+while getopts 'p:v:n:' flag; do
+  case "${flag}" in
+    # Set prefix dir
+    p) prefix="${OPTARG}" ;;
+    v) version="${OPTARG}" ;;
+    *) exit 1;;
+  esac
+done
+
 if [ ! $UID -eq 0 ]; then  
   echo "CircleCI Runner installation must be ran with super user permissions, please rerun with sudo"; 
   exit 1
@@ -108,25 +136,7 @@ if [ -z "$LAUNCH_AGENT_API_AUTH_TOKEN" ]; then
   exit 1
 fi
 
-if [ -z "$LAUNCH_AGENT_USERNAME" ]; then
-  echo "Launch agent username not found in the \$LAUNCH_AGENT_USERNAME environment variable, please set and start intallation again"
-  echo "See https://circleci.com/docs/2.0/runner-installation/ for details"
-  exit 1
-fi
-
-# Default binary & config installation location
-prefix=/opt/circleci
-configDir=/Library/Preferences/com.circleci.runner
-launchConfigDir=/Library/LaunchDaemons
-
-while getopts 'p:v:' flag; do
-  case "${flag}" in
-    # Set prefix dir
-    p) prefix="${OPTARG}" ;;
-    v) version="${OPTARG}" ;;
-    *) exit 1;;
-  esac
-done
+validate_dependencies
 
 # Set up runner directory
 mkdir -p "$prefix/workdir"
